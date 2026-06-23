@@ -153,6 +153,11 @@
     <header class="header">
         <h1>AnonID.</h1>
         <p class="subtitle">Cross-session identity stitching. Zero PII. Zero login.</p>
+
+        <div class="terminal-box" style="margin-top: 40px; background:var(--code-bg); color:var(--code-text); padding:20px; font-family:'JetBrains Mono', monospace; border-left: 4px solid var(--accent);">
+            <div style="color:#888; margin-bottom:10px;">// Live Demo: Your current browser's AnonID session</div>
+            <pre id="live-demo-output" style="margin:0; padding:0; background:transparent; font-size: 0.85rem;">Detecting hardware footprint...</pre>
+        </div>
     </header>
 
     <div class="section">
@@ -160,6 +165,9 @@
         <div class="section-content">
             <p>Access the core engine to deterministically resolve returning users after they clear their cookies. The API key will be provisioned and emailed instantly.</p>
             <a href="#payment-link" class="btn">Get API Key &mdash; $19/mo</a>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 15px;">
+                *Includes up to 500k monthly identifications, 3 isolated namespaces, and webhook integrations. Overages are billed at $0.05 per 1,000 requests.
+            </p>
         </div>
     </div>
 
@@ -208,6 +216,14 @@
   "confidence": "medium",
   "timestamp": "2026-06-23T16:00:00Z"
 }</code></pre>
+            <div class="note" style="margin-top: 20px; font-size: 1rem;">
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 10px;">Common Use Cases:</strong>
+                <ul style="margin-left: 20px; line-height: 1.6;">
+                    <li><strong>E-Commerce:</strong> Instantly merge returning guest carts when a user returns after clearing cookies.</li>
+                    <li><strong>SaaS Growth:</strong> Prevent trial registration abuse by identifying duplicate accounts on the same device.</li>
+                    <li><strong>Analytics:</strong> Stitch anonymous pre-login behavior with authenticated user history.</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -220,6 +236,13 @@
         </div>
     </div>
 </div>
+
+<script src="https://api.anonid.pro/anonid.js" data-key="sk_live_demo_123456789" async></script>
+<script>
+  window.addEventListener('anonid:ready', (e) => {
+    document.getElementById('live-demo-output').innerText = JSON.stringify(e.detail, null, 2);
+  });
+</script>
 
 </body>
 </html>
