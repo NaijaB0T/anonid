@@ -3,7 +3,7 @@
  * Drop-in anonymous cross-session identity stitching.
  * 
  * Usage:
- *   <script src="https://api.anonid.dev/sdk/anonid.js" data-key="sk_live_..." async></script>
+ *   <script src="https://api.anonid.pro/sdk/anonid.js" data-key="sk_live_..." async></script>
  * 
  * Or programmatically:
  *   AnonID.init({ apiKey: 'sk_live_...', onReady: ({ resolved_id, is_returning }) => {} })
@@ -13,7 +13,7 @@
 
     const COOKIE_NAME = '__anid';
     const COOKIE_TTL  = 365 * 24 * 60 * 60; // 1 year in seconds
-    const API_BASE    = 'https://api.anonid.dev'; // customers can override
+    const API_BASE    = 'https://api.anonid.pro'; // customers can override
 
     // ─── Cookie helpers ────────────────────────────────────────────────────────
     function getCookie(name) {

@@ -17,7 +17,7 @@ export async function sendApiKeyEmail(email: string, apiKey: string) {
         <ol>
             <li>Add the <code>anonid.js</code> script to your website.</li>
             <li>Use the API key above in the <code>data-key</code> attribute.</li>
-            <li>Read the docs at <a href="https://anonid.dev">anonid.dev</a> for webhook setup.</li>
+            <li>Read the docs at <a href="https://anonid.pro">anonid.pro</a> for webhook setup.</li>
         </ol>
         <p>Keep this key safe! Do not commit it to public repositories.</p>
         <p>- The AnonID Team</p>
@@ -32,7 +32,7 @@ export async function sendApiKeyEmail(email: string, apiKey: string) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                from: 'AnonID <support@anonid.dev>',
+                from: 'AnonID <support@anonid.pro>',
                 to: [email],
                 subject: 'Your AnonID API Key',
                 html
