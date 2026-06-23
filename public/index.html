@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnonID - Cross-Session Identity API</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --code-bg: #000000;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(to right, #60a5fa, #c084fc); -webkit-background-clip: text; color: transparent; }
+        h2 { margin-top: 3rem; border-bottom: 1px solid var(--surface); padding-bottom: 0.5rem; }
+        p { color: var(--text-muted); font-size: 1.1rem; }
+        
+        .hero { text-align: center; margin: 60px 0; }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+            margin-top: 20px;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+        
+        pre {
+            background-color: var(--code-bg);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--surface);
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 0.9rem; color: #e2e8f0; }
+        
+        .note {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="hero">
+        <h1>AnonID</h1>
+        <p>Recognize returning users after they clear their cookies. Zero PII. Zero login required.</p>
+        
+        <!-- Replace this with an actual Lemon Squeezy or Stripe Payment Link -->
+        <a href="#payment-link" class="btn">Get API Key ($19/mo)</a>
+        <p style="font-size: 0.9rem; margin-top: 10px;">Your API key will be emailed to you instantly after payment.</p>
+    </div>
+
+    <h2>1. The 5-Line Integration</h2>
+    <p>Drop this script into the <code>&lt;head&gt;</code> of your website. Replace <code>YOUR_API_KEY</code> with the key emailed to you.</p>
+<pre><code>&lt;script src="https://api.anonid.dev/anonid.js" data-key="sk_live_YOUR_API_KEY" async&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.addEventListener('anonid:ready', (e) =&gt; {
+    const { resolved_id, is_returning } = e.detail;
+    
+    // Example: send to your analytics or backend
+    console.log("User canonical ID:", resolved_id);
+    if (is_returning) {
+      console.log("Welcome back!");
+      // loadRecommendations(resolved_id);
+      // restoreCart(resolved_id);
+    }
+  });
+&lt;/script&gt;</code></pre>
+
+    <h2>2. The API Response Schema</h2>
+    <p>The <code>e.detail</code> payload object exposes the following schema exactly:</p>
+<pre><code>{
+  "resolved_id": "usr_7f3a9b2c-canonical",
+  "uid": "raw-uuid-from-current-cookie",
+  "is_new": false,
+  "is_returning": true,
+  "confidence": "high",       // "high", "medium", "low", or "new"
+  "session_count": 7          // Number of times this hardware footprint was seen
+}</code></pre>
+
+    <h2>3. The Webhook Schema (Optional)</h2>
+    <p>If you want to merge server-side records (like shopping carts) when a cookie-cleared user is stitched back to their old identity, contact support to set up a webhook URL.</p>
+    <p>We will send a <code>POST</code> request with this payload:</p>
+<pre><code>{
+  "event": "identity_merged",
+  "canonical_id": "usr_7f3a9b2c-canonical",
+  "merged_uid": "new-uuid-from-cleared-browser",
+  "prior_uid": "old-uuid-from-yesterday",
+  "confidence": "medium",
+  "timestamp": "2026-06-23T16:00:00Z"
+}</code></pre>
+
+    <div class="note">
+        <strong>Privacy Note:</strong> AnonID does not store IP addresses, emails, or PII. We use a multi-signal hardware hash (Canvas, WebGL, AudioContext) to deterministically resolve cross-session identity.
+    </div>
+</div>
+
+</body>
+</html>
