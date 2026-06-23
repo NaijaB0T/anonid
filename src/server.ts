@@ -3,6 +3,7 @@ import { authMiddleware } from './middleware/auth';
 import { identify } from './routes/identify';
 import { getUsage } from './routes/usage';
 import { handlePaymentWebhook } from './routes/webhooks';
+import { provisionGatewayAccount } from './routes/admin';
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -12,7 +13,7 @@ app.use(express.json());
 // CORS — allow customer sites to call from browser
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
@@ -26,6 +27,9 @@ app.use('/', express.static('public'));
 
 // Webhooks (unauthenticated public endpoints)
 app.post('/webhooks/payment', handlePaymentWebhook);
+
+// Admin Routes (Secured by ADMIN_API_SECRET)
+app.post('/v1/admin/customers', provisionGatewayAccount);
 
 // API routes — all require auth
 app.post('/v1/identify', authMiddleware, identify);

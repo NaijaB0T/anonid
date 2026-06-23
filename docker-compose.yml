@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "5050:5050"
+    environment:
+      - PORT=5050
+      - REDIS_URL=redis://redis:6379
+      - ANONID_DB_PATH=/app/data/anonid.db
+      - ADMIN_API_SECRET=${ADMIN_API_SECRET:-change_me_in_production}
+    volumes:
+      - anonid_data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  anonid_data:
+  redis_data:
