@@ -13,7 +13,18 @@
 
     const COOKIE_NAME = '__anid';
     const COOKIE_TTL  = 365 * 24 * 60 * 60; // 1 year in seconds
-    const API_BASE    = 'https://api.anonid.pro'; // customers can override
+    
+    // Auto-detect the API base from the script source, or fallback to current origin
+    let API_BASE = 'https://api.anonid.pro';
+    try {
+        const scriptTag = document.currentScript || document.querySelector('script[src*="anonid.js"]');
+        if (scriptTag && scriptTag.src) {
+            const url = new URL(scriptTag.src);
+            API_BASE = url.origin;
+        } else {
+            API_BASE = window.location.origin;
+        }
+    } catch(e) {}
 
     // ─── Cookie helpers ────────────────────────────────────────────────────────
     function getCookie(name) {
