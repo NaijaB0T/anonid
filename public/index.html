@@ -3,122 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnonID - Cross-Session Identity API</title>
+    <title>AnonID - Identity Engine</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        
         :root {
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --code-bg: #000000;
+            --bg: #FFFFFF;
+            --text: #000000;
+            --accent: #FF3B30;
+            --gray: #F2F2F2;
+            --code-bg: #111111;
+            --code-text: #F2F2F2;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
+
+        body {
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.4;
+            font-size: 18px;
+            -webkit-font-smoothing: antialiased;
         }
-        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(to right, #60a5fa, #c084fc); -webkit-background-clip: text; color: transparent; }
-        h2 { margin-top: 3rem; border-bottom: 1px solid var(--surface); padding-bottom: 0.5rem; }
-        p { color: var(--text-muted); font-size: 1.1rem; }
-        
-        .hero { text-align: center; margin: 60px 0; }
-        
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 40px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            margin-bottom: 80px;
+            border-bottom: 4px solid var(--text);
+            padding-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 6rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 2rem;
+            font-weight: 500;
+            max-width: 800px;
+            letter-spacing: -0.02em;
+        }
+
+        .section {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+            margin-bottom: 80px;
+            border-top: 1px solid #E5E5E5;
+            padding-top: 40px;
+        }
+
+        .section-title {
+            grid-column: 1 / 5;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .section-content {
+            grid-column: 5 / -1;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+        }
+
         .btn {
             display: inline-block;
-            background-color: var(--primary);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
+            background-color: var(--accent);
+            color: #FFFFFF;
+            padding: 16px 32px;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
-            transition: background 0.2s;
-            margin-top: 20px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: transform 0.1s;
+            border: none;
+            cursor: pointer;
         }
-        .btn:hover { background-color: var(--primary-hover); }
-        
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
         pre {
             background-color: var(--code-bg);
-            padding: 20px;
-            border-radius: 8px;
+            color: var(--code-text);
+            padding: 30px;
             overflow-x: auto;
-            border: 1px solid var(--surface);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            border-radius: 0;
         }
-        code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 0.9rem; color: #e2e8f0; }
-        
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .inline-code {
+            background-color: var(--gray);
+            color: var(--text);
+            padding: 2px 6px;
+            font-size: 0.9em;
+        }
+
         .note {
-            background-color: rgba(59, 130, 246, 0.1);
-            border-left: 4px solid var(--primary);
-            padding: 15px 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
+            background-color: var(--gray);
+            padding: 30px;
+            border-left: 8px solid var(--text);
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; }
+            .section-title, .section-content { grid-column: 1 / -1; }
+            .section-title { margin-bottom: 20px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="hero">
-        <h1>AnonID</h1>
-        <p>Recognize returning users after they clear their cookies. Zero PII. Zero login required.</p>
-        
-        <!-- Replace this with an actual Lemon Squeezy or Stripe Payment Link -->
-        <a href="#payment-link" class="btn">Get API Key ($19/mo)</a>
-        <p style="font-size: 0.9rem; margin-top: 10px;">Your API key will be emailed to you instantly after payment.</p>
+<div class="grid-container">
+    <header class="header">
+        <h1>AnonID.</h1>
+        <p class="subtitle">Cross-session identity stitching. Zero PII. Zero login.</p>
+    </header>
+
+    <div class="section">
+        <div class="section-title">01 / Subscription</div>
+        <div class="section-content">
+            <p>Access the core engine to deterministically resolve returning users after they clear their cookies. The API key will be provisioned and emailed instantly.</p>
+            <a href="#payment-link" class="btn">Get API Key &mdash; $19/mo</a>
+        </div>
     </div>
 
-    <h2>1. The 5-Line Integration</h2>
-    <p>Drop this script into the <code>&lt;head&gt;</code> of your website. Replace <code>YOUR_API_KEY</code> with the key emailed to you.</p>
+    <div class="section">
+        <div class="section-title">02 / Integration</div>
+        <div class="section-content">
+            <p>Inject the tracking script into your <code>&lt;head&gt;</code>. Replace <span class="inline-code">YOUR_API_KEY</span>.</p>
 <pre><code>&lt;script src="https://api.anonid.pro/anonid.js" data-key="sk_live_YOUR_API_KEY" async&gt;&lt;/script&gt;
 &lt;script&gt;
   window.addEventListener('anonid:ready', (e) =&gt; {
     const { resolved_id, is_returning } = e.detail;
     
-    // Example: send to your analytics or backend
-    console.log("User canonical ID:", resolved_id);
+    console.log("Canonical ID:", resolved_id);
     if (is_returning) {
-      console.log("Welcome back!");
-      // loadRecommendations(resolved_id);
       // restoreCart(resolved_id);
     }
   });
 &lt;/script&gt;</code></pre>
+        </div>
+    </div>
 
-    <h2>2. The API Response Schema</h2>
-    <p>The <code>e.detail</code> payload object exposes the following schema exactly:</p>
+    <div class="section">
+        <div class="section-title">03 / Schema</div>
+        <div class="section-content">
+            <p>The <span class="inline-code">e.detail</span> payload exposes the hardware footprint confidence matrix.</p>
 <pre><code>{
-  "resolved_id": "usr_7f3a9b2c-canonical",
+  "resolved_id": "usr_7f3a9b2c",
   "uid": "raw-uuid-from-current-cookie",
   "is_new": false,
   "is_returning": true,
-  "confidence": "high",       // "high", "medium", "low", or "new"
-  "session_count": 7          // Number of times this hardware footprint was seen
+  "confidence": "high",
+  "session_count": 7
 }</code></pre>
+        </div>
+    </div>
 
-    <h2>3. The Webhook Schema (Optional)</h2>
-    <p>If you want to merge server-side records (like shopping carts) when a cookie-cleared user is stitched back to their old identity, contact support to set up a webhook URL.</p>
-    <p>We will send a <code>POST</code> request with this payload:</p>
+    <div class="section">
+        <div class="section-title">04 / Webhooks</div>
+        <div class="section-content">
+            <p>For server-side reconciliation (e.g., merging shopping carts), configure a webhook to receive merge events when a cookie-cleared session is mapped to a canonical identity.</p>
 <pre><code>{
   "event": "identity_merged",
-  "canonical_id": "usr_7f3a9b2c-canonical",
+  "canonical_id": "usr_7f3a9b2c",
   "merged_uid": "new-uuid-from-cleared-browser",
   "prior_uid": "old-uuid-from-yesterday",
   "confidence": "medium",
   "timestamp": "2026-06-23T16:00:00Z"
 }</code></pre>
+        </div>
+    </div>
 
-    <div class="note">
-        <strong>Privacy Note:</strong> AnonID does not store IP addresses, emails, or PII. We use a multi-signal hardware hash (Canvas, WebGL, AudioContext) to deterministically resolve cross-session identity.
+    <div class="section">
+        <div class="section-title">05 / Architecture</div>
+        <div class="section-content">
+            <div class="note">
+                AnonID utilizes a multi-signal hardware hash (Canvas rendering, WebGL floating point precision, OfflineAudioContext, concurrency locks) to bridge identities. We do not store IP addresses.
+            </div>
+        </div>
     </div>
 </div>
 

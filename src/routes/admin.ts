@@ -24,13 +24,13 @@ export async function provisionGatewayAccount(req: Request, res: Response) {
     try {
         // 1. Create Customer
         const customerId = 'cust_' + uuidv4().replace(/-/g, '');
-        db.prepare(`
+        db.run(`
             INSERT INTO customers (id, email, name, plan)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(email) DO UPDATE SET active = 1, plan = excluded.plan
-        `).run(customerId, email, name, plan);
+        `, customerId, email, name, plan);
 
-        const customer = db.prepare('SELECT id FROM customers WHERE email = ?').get(email) as any;
+        const customer = db.get('SELECT id FROM customers WHERE email = ?', email) as any;
 
         // 2. Generate API Key
         const rawKey = 'sk_live_' + crypto.randomBytes(24).toString('hex');
@@ -38,17 +38,17 @@ export async function provisionGatewayAccount(req: Request, res: Response) {
         const keyPrefix = rawKey.slice(0, 14);
         const keyId = 'key_' + uuidv4().replace(/-/g, '');
 
-        db.prepare(`
+        db.run(`
             INSERT INTO api_keys (id, customer_id, key_hash, key_prefix, label)
             VALUES (?, ?, ?, ?, ?)
-        `).run(keyId, customer.id, keyHash, keyPrefix, 'Gateway Auto-Provisioned Key');
+        `, keyId, customer.id, keyHash, keyPrefix, 'Gateway Auto-Provisioned Key');
 
         // 3. Create Namespace
         const nsId = 'ns_' + uuidv4().replace(/-/g, '');
-        db.prepare(`
+        db.run(`
             INSERT INTO namespaces (id, api_key_id, customer_id, webhook_url)
             VALUES (?, ?, ?, ?)
-        `).run(nsId, keyId, customer.id, webhook_url || null);
+        `, nsId, keyId, customer.id, webhook_url || null);
 
         console.log(`[Admin] Auto-provisioned account for ${email} via Gateway.`);
 
