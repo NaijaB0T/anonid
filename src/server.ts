@@ -5,11 +5,13 @@ import { getUsage } from './routes/usage';
 import { handlePaymentWebhook } from './routes/webhooks';
 import { provisionGatewayAccount } from './routes/admin';
 import { trackIntent } from './routes/track';
+import { trialSignup } from './routes/trial';
 
 const app = express();
 const PORT = process.env.PORT || 5050;
 
 app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // CORS — allow customer sites to call from browser
 app.use((req, res, next) => {
@@ -26,8 +28,9 @@ app.get('/health', (_, res) => res.json({ ok: true, service: 'anonid', ts: new D
 // Serve the client SDK & Landing Page docs
 app.use('/', express.static('public'));
 
-// Webhooks (unauthenticated public endpoints)
+// Webhooks and Public Trial Endpoint
 app.post('/webhooks/payment', handlePaymentWebhook);
+app.post('/v1/trial/signup', trialSignup);
 
 // Admin Routes (Secured by ADMIN_API_SECRET)
 app.post('/v1/admin/customers', provisionGatewayAccount);

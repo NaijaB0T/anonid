@@ -161,12 +161,18 @@
     </header>
 
     <div class="section">
-        <div class="section-title">01 / Subscription</div>
+        <div class="section-title">01 / Beta Access</div>
         <div class="section-content">
-            <p>Access the core engine to deterministically resolve returning users after they clear their cookies. The API key will be provisioned and emailed instantly.</p>
-            <a href="#payment-link" class="btn">Get API Key &mdash; $19/mo</a>
+            <p>Access the core engine to deterministically resolve returning users after they clear their cookies.</p>
+            <div style="margin-top: 20px; background: var(--code-bg); padding: 20px; border-left: 4px solid var(--accent);">
+              <p style="color: var(--code-text); font-weight: bold; margin-bottom: 10px;">🚀 Launch Day Special: Claim a free Beta Key instantly</p>
+              <form action="/v1/trial/signup" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="email" name="email" placeholder="developer@example.com" required style="background: #222; color: #fff; border: 1px solid #444; padding: 12px; font-size: 1rem; flex-grow: 1; min-width: 200px;" />
+                <button type="submit" class="btn" style="margin: 0; padding: 12px 24px;">Get Free Key</button>
+              </form>
+            </div>
             <p style="font-size: 0.9rem; color: #666; margin-top: 15px;">
-                *Includes up to 500k monthly identifications, 3 isolated namespaces, and webhook integrations. Overages are billed at $0.05 per 1,000 requests.
+                *Beta keys include full access to the Semantic Engine, 500k monthly resolutions, and webhook integrations.
             </p>
         </div>
     </div>
