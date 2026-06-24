@@ -7,8 +7,8 @@ export async function trackIntent(req: Request, res: Response) {
     const { apiKey } = req as AuthedRequest;
     const { uid, tags } = req.body;
 
-    if (!uid || !tags || !Array.isArray(tags)) {
-        return res.status(400).json({ error: 'uid and tags array are required' });
+    if (!uid || !tags || !Array.isArray(tags) || tags.length > 20) {
+        return res.status(400).json({ error: 'Invalid payload: uid required and max 20 tags allowed' });
     }
 
     const ns = apiKey.namespaceId;

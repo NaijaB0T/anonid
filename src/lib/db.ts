@@ -14,6 +14,7 @@ sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('cache_size = -8000');
 sqlite.pragma('foreign_keys = ON');
+sqlite.pragma('busy_timeout = 5000');
 
 // Run schema on startup
 const schema = fs.readFileSync(path.join(__dirname, '../../schema.sql'), 'utf8');
@@ -154,8 +155,9 @@ export async function getCachedApiKey(keyHash: string): Promise<object | null> {
 /** Increment usage counter atomically (for billing audit) */
 export async function incrementUsage(apiKeyId: string): Promise<void> {
     const day = new Date().toISOString().slice(0, 10);
+    const key = `anonid:usage:${apiKeyId}:${day}`;
     try {
-        await redis.incr(`anonid:usage:${apiKeyId}:${day}`);
+        await redis.pipeline().incr(key).expire(key, 86400 * 2).exec(); // Expire in 48 hours
     } catch {}
 }
 
@@ -163,13 +165,14 @@ export async function incrementUsage(apiKeyId: string): Promise<void> {
 export async function incrementRequestCount(namespaceId: string, rawUid: string, dbCount: number): Promise<number> {
     try {
         const key = `anonid:reqs:${namespaceId}:${rawUid}`;
-        const count = await redis.incr(key);
+        const [[, count]] = await redis.pipeline().incr(key).expire(key, 86400 * 30).exec() as any;
+        
         // If Redis just started tracking this, initialize it with the historical DB count
-        if (count === 1 && dbCount > 1) {
-            await redis.incrby(key, dbCount - 1);
+        if (Number(count) === 1 && dbCount > 1) {
+            await redis.pipeline().incrby(key, dbCount - 1).expire(key, 86400 * 30).exec();
             return dbCount;
         }
-        return count;
+        return Number(count);
     } catch {
         return dbCount + 1; // Fallback if Redis fails
     }

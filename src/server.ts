@@ -9,7 +9,7 @@ import { trackIntent } from './routes/track';
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 // CORS — allow customer sites to call from browser
 app.use((req, res, next) => {
