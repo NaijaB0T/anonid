@@ -214,10 +214,29 @@
 
             const data = await res.json();
 
-            // 4. Expose globally + fire callback
+            if (data.error) {
+                console.error('[AnonID]', data.error);
+                return;
+            }
+
             global.__anonId = data;
-            global.dispatchEvent(new CustomEvent('anonid:ready', { detail: data }));
+            
+            // Dispatch the baseline identity event instantly
             if (typeof onReady === 'function') onReady(data);
+            global.dispatchEvent(new CustomEvent('anonid:ready', { detail: data }));
+
+            // ─── Auto-Semantic Stitching (Zero Config) ─────────────
+            // Silently scrape page context to build a behavioral vector in the background
+            const contextTags = [
+                document.title,
+                ...Array.from(document.querySelectorAll('meta[name="keywords"], meta[name="description"]')).map(m => m.content),
+                window.location.pathname.replace(/[\/\-_]/g, ' ')
+            ].filter(Boolean);
+
+            if (contextTags.length > 0) {
+                // Fire and forget
+                track(contextTags).catch(() => {});
+            }
 
         } catch (err) {
             if (typeof onError === 'function') onError(err);
