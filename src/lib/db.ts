@@ -93,16 +93,19 @@ export async function checkRateLimit(apiKeyId: string, plan: string): Promise<{
 }
 
 /** Cache a resolved identity (5 min TTL) */
-export async function cacheIdentity(namespaceId: string, rawUid: string, resolvedId: string): Promise<void> {
+export async function cacheIdentity(namespaceId: string, rawUid: string, payload: { r: string; c: string | null; d: number }): Promise<void> {
     try {
-        await redis.set(`anonid:id:${namespaceId}:${rawUid}`, resolvedId, 'EX', 300);
+        await redis.set(`anonid:id:${namespaceId}:${rawUid}`, JSON.stringify(payload), 'EX', 300);
     } catch {}
 }
 
 /** Get cached resolved identity */
-export async function getCachedIdentity(namespaceId: string, rawUid: string): Promise<string | null> {
+export async function getCachedIdentity(namespaceId: string, rawUid: string): Promise<{ r: string; c: string | null; d: number } | null> {
     try {
-        return await redis.get(`anonid:id:${namespaceId}:${rawUid}`);
+        const val = await redis.get(`anonid:id:${namespaceId}:${rawUid}`);
+        if (!val) return null;
+        if (val.startsWith('{')) return JSON.parse(val);
+        return { r: val, c: null, d: 1 };
     } catch {
         return null;
     }

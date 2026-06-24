@@ -39,9 +39,10 @@ export async function identify(req: Request, res: Response) {
     const cached = await getCachedIdentity(ns, uid);
     if (cached) {
         return res.json({
-            resolved_id: cached,
+            resolved_id: cached.r,
             uid,
-            cluster_id: null, // Omitted on fast path for speed, or fetch from redis if needed
+            cluster_id: cached.c,
+            cluster_devices: cached.d || 1,
             is_new: false,
             is_returning: true,
             confidence: 'cached',
@@ -67,14 +68,28 @@ export async function identify(req: Request, res: Response) {
             // Known uid — update last_seen + session_count, and graduate confidence to 'high' for returning exact matches
             const updatedConfidence = existing.session_count >= 1 ? 'high' : existing.confidence;
             
+            let clusterId = existing.cluster_id;
+            if (!clusterId) {
+                // Backfill logic for legacy sessions created before clustering
+                const networkPeer = db.get(
+                    'SELECT cluster_id FROM identity_map WHERE namespace_id = ? AND last_ip = ? AND cluster_id IS NOT NULL ORDER BY last_seen DESC LIMIT 1',
+                    ns, ipHash
+                );
+                clusterId = networkPeer?.cluster_id ? networkPeer.cluster_id : `cls_${uuidv4().replace(/-/g, '')}`;
+            }
+
+            const countRow = db.get('SELECT COUNT(DISTINCT resolved_id) as count FROM identity_map WHERE namespace_id = ? AND cluster_id = ?', ns, clusterId);
+            const clusterDevices = countRow ? countRow.count : 1;
+
             db.run(
-                'UPDATE identity_map SET last_seen = datetime(\'now\'), session_count = session_count + 1, confidence = ?, last_ip = ? WHERE namespace_id = ? AND raw_uid = ?',
-                updatedConfidence, ipHash, ns, uid
+                'UPDATE identity_map SET last_seen = datetime(\'now\'), session_count = session_count + 1, confidence = ?, last_ip = ?, cluster_id = ? WHERE namespace_id = ? AND raw_uid = ?',
+                updatedConfidence, ipHash, clusterId, ns, uid
             );
-            await cacheIdentity(ns, uid, existing.resolved_id);
+            await cacheIdentity(ns, uid, { r: existing.resolved_id, c: clusterId, d: clusterDevices });
             return res.json({
                 resolved_id: existing.resolved_id,
-                cluster_id: existing.cluster_id,
+                cluster_id: clusterId,
+                cluster_devices: clusterDevices,
                 uid,
                 is_new: false,
                 is_returning: true,
@@ -120,7 +135,10 @@ export async function identify(req: Request, res: Response) {
             VALUES (?, ?, ?, ?, ?, ?, ?, 1)
         `, ns, uid, resolvedId, clusterId, ipHash, fingerprint || null, confidence);
 
-        await cacheIdentity(ns, uid, resolvedId);
+        const countRow = db.get('SELECT COUNT(DISTINCT resolved_id) as count FROM identity_map WHERE namespace_id = ? AND cluster_id = ?', ns, clusterId);
+        const clusterDevices = countRow ? countRow.count : 1;
+
+        await cacheIdentity(ns, uid, { r: resolvedId, c: clusterId, d: clusterDevices });
 
         // ─── 7. Fire webhook if a stitch happened ────────────────────────────
         if (!isNew && mergedFrom && apiKey.webhookUrl) {
@@ -137,6 +155,7 @@ export async function identify(req: Request, res: Response) {
         return res.json({
             resolved_id: resolvedId,
             cluster_id: clusterId,
+            cluster_devices: clusterDevices,
             uid,
             is_new: isNew,
             is_returning: !isNew,
