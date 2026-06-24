@@ -34,12 +34,15 @@ export async function trackIntent(req: Request, res: Response) {
         last_updated = datetime('now')
     `, ns, uid, user.cluster_id, intentString, vectorJson);
 
-    // 4. Scoped Vector Search (Compare against others in the exact same household)
+    // 4. Scoped Vector Search (Compare against others in the exact same household, active within the last 15 minutes)
     const peers = db.all(`
         SELECT s.raw_uid, i.resolved_id, s.vector_json 
         FROM semantic_intents s
         JOIN identity_map i ON s.namespace_id = i.namespace_id AND s.raw_uid = i.raw_uid
-        WHERE s.namespace_id = ? AND s.cluster_id = ? AND s.raw_uid != ?
+        WHERE s.namespace_id = ? 
+        AND s.cluster_id = ? 
+        AND s.raw_uid != ?
+        AND s.last_updated > datetime('now', '-15 minutes')
     `, ns, user.cluster_id, uid);
 
     let bestMatch = null;
@@ -57,15 +60,38 @@ export async function trackIntent(req: Request, res: Response) {
 
     // 5. Semantic Stitch (Threshold: 0.90)
     if (highestSim >= 0.90 && bestMatch && bestMatch.resolved_id !== user.resolved_id) {
-        // Merge the current user into the peer's resolved_id!
-        db.run(
-            'UPDATE identity_map SET resolved_id = ?, confidence = ? WHERE namespace_id = ? AND raw_uid = ?',
-            bestMatch.resolved_id, 'semantic_stitch', ns, uid
-        );
+        // Enforce Multiple-Signal Validation (Soft Association Table)
+        // Sort UIDs so A is always less than B to prevent duplicate bidirectional rows
+        const uidA = uid < bestMatch.raw_uid ? uid : bestMatch.raw_uid;
+        const uidB = uid > bestMatch.raw_uid ? uid : bestMatch.raw_uid;
+        
+        db.run(`
+            INSERT INTO soft_associations (namespace_id, uid_a, uid_b, overlap_count, last_overlap)
+            VALUES (?, ?, ?, 1, datetime('now'))
+            ON CONFLICT(namespace_id, uid_a, uid_b) DO UPDATE SET 
+            overlap_count = overlap_count + 1,
+            last_overlap = datetime('now')
+        `, ns, uidA, uidB);
+
+        const assoc = db.get('SELECT overlap_count FROM soft_associations WHERE namespace_id = ? AND uid_a = ? AND uid_b = ?', ns, uidA, uidB);
+
+        // Require 3 highly-similar semantic overlaps before executing a destructive DB merge
+        if (assoc && assoc.overlap_count >= 3) {
+            db.run(
+                'UPDATE identity_map SET resolved_id = ?, confidence = ? WHERE namespace_id = ? AND raw_uid = ?',
+                bestMatch.resolved_id, 'semantic_stitch', ns, uid
+            );
+            return res.json({
+                status: 'stitched',
+                resolved_id: bestMatch.resolved_id,
+                confidence: 'semantic_stitch',
+                similarity: highestSim
+            });
+        }
+
         return res.json({
-            status: 'stitched',
-            resolved_id: bestMatch.resolved_id,
-            confidence: 'semantic_stitch',
+            status: 'soft_association',
+            overlap_count: assoc?.overlap_count || 1,
             similarity: highestSim
         });
     }

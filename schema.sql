@@ -97,3 +97,13 @@ CREATE TABLE IF NOT EXISTS semantic_intents (
     PRIMARY KEY (namespace_id, raw_uid)
 );
 CREATE INDEX IF NOT EXISTS idx_semantic_cluster ON semantic_intents(namespace_id, cluster_id);
+
+-- Mitigates the "Coffee Shop Collision" by tracking semantic overlaps before hard merging
+CREATE TABLE IF NOT EXISTS soft_associations (
+    namespace_id TEXT NOT NULL,
+    uid_a TEXT NOT NULL,
+    uid_b TEXT NOT NULL,
+    overlap_count INTEGER NOT NULL DEFAULT 1,
+    last_overlap DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (namespace_id, uid_a, uid_b)
+);
