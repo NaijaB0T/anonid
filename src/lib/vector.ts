@@ -1,15 +1,31 @@
-import { pipeline } from '@xenova/transformers';
+import { Worker } from 'worker_threads';
+import path from 'path';
 
-let extractor: any = null;
+// Point to the compiled .js file in the dist/ folder at runtime
+const workerPath = path.resolve(__dirname, './vector-worker.js');
+const worker = new Worker(workerPath);
 
-/** Returns a 384-dimensional vector representing the text intent */
-export async function getEmbedding(text: string): Promise<number[]> {
-    if (!extractor) {
-        // Downloads and caches Xenova/all-MiniLM-L6-v2 on first run
-        extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+let msgId = 0;
+const pending = new Map<number, (vec: number[]) => void>();
+
+worker.on('message', (msg) => {
+    if (msg.error) {
+        console.error('[VectorWorker] Inference Error:', msg.error);
     }
-    const output = await extractor(text, { pooling: 'mean', normalize: true });
-    return Array.from(output.data);
+    const resolve = pending.get(msg.id);
+    if (resolve && msg.vector) {
+        resolve(msg.vector);
+        pending.delete(msg.id);
+    }
+});
+
+/** Offloads ONNX embedding math to a dedicated background Worker Thread */
+export async function getEmbedding(text: string): Promise<number[]> {
+    return new Promise((resolve) => {
+        const id = ++msgId;
+        pending.set(id, resolve);
+        worker.postMessage({ id, text });
+    });
 }
 
 /** Calculates Cosine Similarity between two vectors (1.0 = identical, 0.0 = orthogonal) */
