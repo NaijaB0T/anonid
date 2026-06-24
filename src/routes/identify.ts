@@ -10,6 +10,7 @@ import {
 import { AuthedRequest } from '../middleware/auth';
 import { scoreFingerprint } from '../fingerprint/score';
 import { fireWebhook } from '../lib/webhook';
+import crypto from 'crypto';
 
 export async function identify(req: Request, res: Response) {
     const { apiKey } = req as AuthedRequest;
@@ -29,12 +30,18 @@ export async function identify(req: Request, res: Response) {
     const consentGiven = consent !== false; // default true unless explicitly false
     const canStitch = apiKey.stitchEnabled && consentGiven && !!fingerprint;
 
+    // Hash the IP address to maintain Zero PII while enabling network clustering
+    const rawIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown') as string;
+    const clientIp = rawIp.split(',')[0].trim();
+    const ipHash = crypto.createHash('sha256').update(`${clientIp}:${ns}`).digest('hex').substring(0, 16);
+
     // ─── 1. Fast path: Redis cache hit ───────────────────────────────────────
     const cached = await getCachedIdentity(ns, uid);
     if (cached) {
         return res.json({
             resolved_id: cached,
             uid,
+            cluster_id: null, // Omitted on fast path for speed, or fetch from redis if needed
             is_new: false,
             is_returning: true,
             confidence: 'cached',
@@ -52,7 +59,7 @@ export async function identify(req: Request, res: Response) {
     try {
         // ─── 3. DB lookup: does this uid already have a resolved identity? ────
         const existing = db.get(
-            'SELECT resolved_id, session_count, confidence FROM identity_map WHERE namespace_id = ? AND raw_uid = ?',
+            'SELECT resolved_id, cluster_id, session_count, confidence FROM identity_map WHERE namespace_id = ? AND raw_uid = ?',
             ns, uid
         );
 
@@ -61,12 +68,13 @@ export async function identify(req: Request, res: Response) {
             const updatedConfidence = existing.session_count >= 1 ? 'high' : existing.confidence;
             
             db.run(
-                'UPDATE identity_map SET last_seen = datetime(\'now\'), session_count = session_count + 1, confidence = ? WHERE namespace_id = ? AND raw_uid = ?',
-                updatedConfidence, ns, uid
+                'UPDATE identity_map SET last_seen = datetime(\'now\'), session_count = session_count + 1, confidence = ?, last_ip = ? WHERE namespace_id = ? AND raw_uid = ?',
+                updatedConfidence, ipHash, ns, uid
             );
             await cacheIdentity(ns, uid, existing.resolved_id);
             return res.json({
                 resolved_id: existing.resolved_id,
+                cluster_id: existing.cluster_id,
                 uid,
                 is_new: false,
                 is_returning: true,
@@ -96,11 +104,21 @@ export async function identify(req: Request, res: Response) {
             confidence = 'new';
         }
 
+        // ─── 5.5 Cross-Device Clustering ──────────────────────────────────────
+        let clusterId = `cls_${uuidv4().replace(/-/g, '')}`;
+        const networkPeer = db.get(
+            'SELECT cluster_id FROM identity_map WHERE namespace_id = ? AND last_ip = ? ORDER BY last_seen DESC LIMIT 1',
+            ns, ipHash
+        );
+        if (networkPeer && networkPeer.cluster_id) {
+            clusterId = networkPeer.cluster_id; // Inherit cluster from same network
+        }
+
         // ─── 6. Write to identity_map ─────────────────────────────────────────
         db.run(`
-            INSERT INTO identity_map (namespace_id, raw_uid, resolved_id, fingerprint_hash, confidence, session_count)
-            VALUES (?, ?, ?, ?, ?, 1)
-        `, ns, uid, resolvedId, fingerprint || null, confidence);
+            INSERT INTO identity_map (namespace_id, raw_uid, resolved_id, cluster_id, last_ip, fingerprint_hash, confidence, session_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        `, ns, uid, resolvedId, clusterId, ipHash, fingerprint || null, confidence);
 
         await cacheIdentity(ns, uid, resolvedId);
 
@@ -118,6 +136,7 @@ export async function identify(req: Request, res: Response) {
 
         return res.json({
             resolved_id: resolvedId,
+            cluster_id: clusterId,
             uid,
             is_new: isNew,
             is_returning: !isNew,

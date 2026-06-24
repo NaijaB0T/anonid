@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS identity_map (
     namespace_id    TEXT NOT NULL,
     raw_uid         TEXT NOT NULL,            -- UUID from the customer's visitor cookie
     resolved_id     TEXT NOT NULL,            -- canonical ID (either raw_uid or merged target)
+    cluster_id      TEXT,                     -- network-level cluster ID (for cross-device)
+    last_ip         TEXT,                     -- IP address hash for clustering
     fingerprint_hash TEXT,                    -- multi-signal fingerprint hash
     confidence      TEXT NOT NULL DEFAULT 'new', -- new | low | medium | high
     session_count   INTEGER NOT NULL DEFAULT 1,
