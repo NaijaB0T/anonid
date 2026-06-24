@@ -158,3 +158,19 @@ export async function incrementUsage(apiKeyId: string): Promise<void> {
         await redis.incr(`anonid:usage:${apiKeyId}:${day}`);
     } catch {}
 }
+
+/** Atomic live request counter (Write-Behind cache style) */
+export async function incrementRequestCount(namespaceId: string, rawUid: string, dbCount: number): Promise<number> {
+    try {
+        const key = `anonid:reqs:${namespaceId}:${rawUid}`;
+        const count = await redis.incr(key);
+        // If Redis just started tracking this, initialize it with the historical DB count
+        if (count === 1 && dbCount > 1) {
+            await redis.incrby(key, dbCount - 1);
+            return dbCount;
+        }
+        return count;
+    } catch {
+        return dbCount + 1; // Fallback if Redis fails
+    }
+}
