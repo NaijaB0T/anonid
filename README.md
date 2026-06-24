@@ -1,6 +1,8 @@
 # AnonID: Open Source, Self-Hosted Identity Resolution Engine
 
-An open-source, lightweight alternative to Fingerprint.com built with Express, SQLite, and Redis. It stitches anonymous visitor sessions across cookie clears using multi-signal browser fingerprinting.
+[🚀 Click here to test the live interactive hardware footprint demo](https://www.anonid.pro)
+
+An open-source, lightweight alternative to Fingerprint.com built with Express, SQLite, and Redis. It stitches anonymous visitor sessions across cookie clears using multi-signal browser fingerprinting, and natively bridges cross-device sessions via localized semantic behavior vectors.
 
 ## Architecture
 
@@ -17,6 +19,7 @@ Cart abandonment is a multi-billion dollar problem. The standard approach relies
 1. **First Visit:** The client-side SDK generates a unique UUID cookie and computes a robust hardware footprint.
 2. **Returning Visit:** If the cookie is intact, it's a deterministic match (`confidence: high`).
 3. **Cookie Clear Event:** If the user returns with a wiped cookie, the SDK computes the same hardware footprint. The backend cross-references this against historical sessions, verifies trust thresholds, and seamlessly stitches the new cookie to the canonical identity (`confidence: medium`).
+4. **Cross-Device Switch (Mobile/Desktop):** The edge engine automatically tracks semantic vectors of the content read by the user. If a mobile phone on the same Wi-Fi opens similar content, AnonID natively stitches the two distinct devices into one canonical identity (`confidence: semantic_stitch`).
 
 ## Self-Hosting via Docker Compose
 
