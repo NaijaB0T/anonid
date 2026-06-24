@@ -46,7 +46,7 @@ export async function identify(req: Request, res: Response) {
             is_new: false,
             is_returning: true,
             confidence: 'cached',
-            session_count: null, // not re-fetched on cache hit for speed
+            session_count: cached.s || 1,
         });
     }
 
@@ -85,7 +85,7 @@ export async function identify(req: Request, res: Response) {
                 'UPDATE identity_map SET last_seen = datetime(\'now\'), session_count = session_count + 1, confidence = ?, last_ip = ?, cluster_id = ? WHERE namespace_id = ? AND raw_uid = ?',
                 updatedConfidence, ipHash, clusterId, ns, uid
             );
-            await cacheIdentity(ns, uid, { r: existing.resolved_id, c: clusterId, d: clusterDevices });
+            await cacheIdentity(ns, uid, { r: existing.resolved_id, c: clusterId, d: clusterDevices, s: existing.session_count + 1 });
             return res.json({
                 resolved_id: existing.resolved_id,
                 cluster_id: clusterId,
@@ -138,7 +138,7 @@ export async function identify(req: Request, res: Response) {
         const countRow = db.get('SELECT COUNT(DISTINCT resolved_id) as count FROM identity_map WHERE namespace_id = ? AND cluster_id = ?', ns, clusterId);
         const clusterDevices = countRow ? countRow.count : 1;
 
-        await cacheIdentity(ns, uid, { r: resolvedId, c: clusterId, d: clusterDevices });
+        await cacheIdentity(ns, uid, { r: resolvedId, c: clusterId, d: clusterDevices, s: 1 });
 
         // ─── 7. Fire webhook if a stitch happened ────────────────────────────
         if (!isNew && mergedFrom && apiKey.webhookUrl) {
