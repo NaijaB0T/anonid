@@ -4,6 +4,7 @@ import { identify } from './routes/identify';
 import { getUsage } from './routes/usage';
 import { handlePaymentWebhook } from './routes/webhooks';
 import { provisionGatewayAccount } from './routes/admin';
+import { trackIntent } from './routes/track';
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -33,6 +34,7 @@ app.post('/v1/admin/customers', provisionGatewayAccount);
 
 // API routes — all require auth
 app.post('/v1/identify', authMiddleware, identify);
+app.post('/v1/track', authMiddleware, trackIntent);
 app.get('/v1/usage', authMiddleware, getUsage);
 
 app.listen(PORT, () => {

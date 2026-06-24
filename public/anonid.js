@@ -242,7 +242,35 @@
     }
 
     // ─── Public API ───────────────────────────────────────────────────────────
-    global.AnonID = { init, collectSignals };
+    async function track(tags) {
+        const script = document.querySelector('script[data-key]');
+        const apiKey = script ? script.dataset.key : null;
+        if (!global.__anonId || !global.__anonId.uid || !apiKey) {
+            console.warn('[AnonID] Cannot track without active session.');
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE}/v1/track`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({ uid: global.__anonId.uid, tags })
+            });
+            const data = await res.json();
+            if (data.status === 'stitched') {
+                global.__anonId.resolved_id = data.resolved_id;
+                global.__anonId.confidence = data.confidence;
+                global.dispatchEvent(new CustomEvent('anonid:stitched', { detail: global.__anonId }));
+            }
+            return data;
+        } catch (e) {
+            console.error('[AnonID] Track error', e);
+        }
+    }
+
+    global.AnonID = { init, collectSignals, track };
 
     // Auto-init if script tag has data-key
     if (document.readyState === 'loading') {

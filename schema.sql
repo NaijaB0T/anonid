@@ -86,3 +86,14 @@ CREATE TABLE IF NOT EXISTS webhook_log (
     attempted_at    TEXT NOT NULL DEFAULT (datetime('now')),
     delivered       INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS semantic_intents (
+    namespace_id TEXT NOT NULL,
+    raw_uid TEXT NOT NULL,
+    cluster_id TEXT NOT NULL,
+    intent_string TEXT,
+    vector_json TEXT,
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (namespace_id, raw_uid)
+);
+CREATE INDEX IF NOT EXISTS idx_semantic_cluster ON semantic_intents(namespace_id, cluster_id);
